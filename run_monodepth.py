@@ -342,7 +342,7 @@ def run(input_path, output_path, model_path, train_bool, model_type="dpt_hybrid"
         
         # Save the trained model
         Path(os.path.join("models", model_params.run_title)).mkdir(parents=True, exist_ok=True)
-        torch.save(model.state_dict(), os.path.join('models', model_params.run_title, 'fasterrcnn_model.pth'))
+        torch.save(model.state_dict(), os.path.join('models', model_params.run_title, 'trained_model.pt'))
 
         # Define the file path where parameters will be saved
         file_path = os.path.join("models", f"{model_params.run_title}", "parameters.txt")
@@ -353,7 +353,7 @@ def run(input_path, output_path, model_path, train_bool, model_type="dpt_hybrid"
             for param, value in parameters.items():
                 # Write the parameter name and value in the format "param_name = value"
                 f.write(f"{param} = {value}\n")
-        logger.info("Training completed, params saved, and model saved to 'fasterrcnn_model_" + model_params.run_title + ".pth'.")
+        logger.info("Training completed, params saved, and model saved to 'fasterrcnn_model_" + model_params.run_title + ".pt'.")
 
     else:
         print("Evaluating, No Training")
@@ -427,8 +427,8 @@ def run(input_path, output_path, model_path, train_bool, model_type="dpt_hybrid"
 
 class Params:
     def __init__(self):
-        self.num_epochs = 2
-        self.batch_size = 2
+        self.num_epochs = 100
+        self.batch_size = 16
         self.lr = 0.005
         # self.momentum = 0.9
         # self.weight_decay = 0.0001 # 0.0005
@@ -436,7 +436,7 @@ class Params:
         # self.lr_gamma = 0.1
         # self.name = "resnet_backbone" # mobilenet_backbone #resnet_backbone
         self.resume_training = True
-        self.run_title = "syndrone_train_v1"
+        self.run_title = "syndrone_train_v2"
         # self.train_directory = 'c:/Users/chase/OneDrive/Documents/Grad/ML_for_Robots/final_project/dataset/images/train'
         # self.val_directory = 'c:/Users/chase/OneDrive/Documents/Grad/ML_for_Robots/final_project/dataset/images/val'
         # self.depth_train_directory = 'c:/Users/chase/OneDrive/Documents/Grad/ML_for_Robots/final_project/dataset/depth/train'
