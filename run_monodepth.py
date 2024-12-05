@@ -263,7 +263,7 @@ def run(input_path, output_path, model_path, train_bool, model_type="dpt_hybrid"
             start_epoch = checkpoint["epoch"] + 1
             optimizer.load_state_dict(checkpoint["optimizer"])
             # lr_scheduler.load_state_dict(checkpoint["lr_scheduler"])
-            assert model_params == checkpoint["model_params"]
+            # assert model_params == checkpoint["model_params"]
 
         Path(os.path.join("runs/", f"{model_params.run_title}/", 'train')).mkdir(parents=True, exist_ok=True)
         Path(os.path.join("checkpoints", model_params.run_title)).mkdir(parents=True, exist_ok=True)
@@ -332,7 +332,7 @@ def run(input_path, output_path, model_path, train_bool, model_type="dpt_hybrid"
                 "optimizer": optimizer.state_dict(),
                 # "lr_scheduler": lr_scheduler.state_dict(),
                 "epoch": epoch,
-                # "model_params": model_params
+                "model_params": model_params
             }
             
             torch.save(checkpoint, os.path.join("checkpoints", model_params.run_title, f"model_{epoch}.pth"))
