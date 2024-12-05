@@ -250,6 +250,10 @@ def run(input_path, output_path, model_path, train_bool, model_type="dpt_hybrid"
         train_dataloader = DataLoader(train_dataset, batch_size=model_params.batch_size, shuffle=True)
         val_dataloader = DataLoader(val_dataset, batch_size=len(val_dataset), shuffle=True) # val considers entire val dataset
 
+        # Construct an optimizer
+        params = [p for p in model.parameters() if p.requires_grad]
+        optimizer = torch.optim.SGD(params, lr=model_params.lr)
+
         checkpoint_path = os.path.join("checkpoints", model_params.run_title, f"checkpoint.pth")
 
         if resume_training and os.path.exists(checkpoint_path):
@@ -260,10 +264,6 @@ def run(input_path, output_path, model_path, train_bool, model_type="dpt_hybrid"
             optimizer.load_state_dict(checkpoint["optimizer"])
             # lr_scheduler.load_state_dict(checkpoint["lr_scheduler"])
             assert model_params == checkpoint["model_params"]
-
-        # Construct an optimizer
-        params = [p for p in model.parameters() if p.requires_grad]
-        optimizer = torch.optim.SGD(params, lr=model_params.lr)
 
         Path(os.path.join("runs/", f"{model_params.run_title}/", 'train')).mkdir(parents=True, exist_ok=True)
         Path(os.path.join("checkpoints", model_params.run_title)).mkdir(parents=True, exist_ok=True)
