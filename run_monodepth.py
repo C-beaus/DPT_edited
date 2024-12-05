@@ -274,55 +274,55 @@ def run(input_path, output_path, model_path, train_bool, model_type="dpt_hybrid"
             model.train()
             epoch_loss = 0.0
 
-            # for batch in train_dataloader:
-            #     rgb_image = batch["rgb"].to(device)
-            #     ground_truth_depth = batch["depth"].to(device)
+            for batch in train_dataloader:
+                rgb_image = batch["rgb"].to(device)
+                ground_truth_depth = batch["depth"].to(device)
                 
-            #     # loss_temp = []
-            #     loss_temp = 0
-            #     for rgb, ground_truth in zip(rgb_image, ground_truth_depth):
+                # loss_temp = []
+                loss_temp = 0
+                for rgb, ground_truth in zip(rgb_image, ground_truth_depth):
 
-            #         # predicted_depth = model.forward(rgb_image)
-            #         # loss = (custom_loss(predicted_depth, ground_truth_depth))
-            #         predicted_depth = model.forward(rgb)
+                    # predicted_depth = model.forward(rgb_image)
+                    # loss = (custom_loss(predicted_depth, ground_truth_depth))
+                    predicted_depth = model.forward(rgb)
 
-            #         # loss_temp.append(custom_loss(predicted_depth, ground_truth))
-            #         loss_temp += custom_loss(predicted_depth, ground_truth)
+                    # loss_temp.append(custom_loss(predicted_depth, ground_truth))
+                    loss_temp += custom_loss(predicted_depth, ground_truth)
 
-            #     # loss = sum(loss_temp)
-            #     loss = loss_temp
-            #     optimizer.zero_grad()
-            #     loss.backward()
-            #     optimizer.step()
+                # loss = sum(loss_temp)
+                loss = loss_temp
+                optimizer.zero_grad()
+                loss.backward()
+                optimizer.step()
             #     torch.cuda.empty_cache() # Not entirely sure if this will help or not
 
-            scaler = torch.cuda.amp.GradScaler()  # Initialize scaler
+            # scaler = torch.cuda.amp.GradScaler()  # Initialize scaler
+            #
+            # for batch in train_dataloader:
+            #     with torch.cuda.amp.autocast():  # Enable mixed precision
+            #         rgb_image = batch["rgb"]
+            #         ground_truth_depth = batch["depth"]
+            #         loss_temp = 0
+            #         for rgb, ground_truth in zip(rgb_image, ground_truth_depth):
 
-            for batch in train_dataloader:
-                with torch.cuda.amp.autocast():  # Enable mixed precision
-                    rgb_image = batch["rgb"]
-                    ground_truth_depth = batch["depth"]
-                    loss_temp = 0
-                    for rgb, ground_truth in zip(rgb_image, ground_truth_depth):
+            #             # predicted_depth = model.forward(rgb_image)
+            #             # loss = (custom_loss(predicted_depth, ground_truth_depth))
+            #             rgb = rgb.to(device)
+            #             ground_truth = ground_truth.to(device)
 
-                        # predicted_depth = model.forward(rgb_image)
-                        # loss = (custom_loss(predicted_depth, ground_truth_depth))
-                        rgb = rgb.to(device)
-                        ground_truth = ground_truth.to(device)
+            #             predicted_depth = model.forward(rgb)
 
-                        predicted_depth = model.forward(rgb)
+            #             # loss_temp.append(custom_loss(predicted_depth, ground_truth))
+            #             loss_temp += custom_loss(predicted_depth, ground_truth)
 
-                        # loss_temp.append(custom_loss(predicted_depth, ground_truth))
-                        loss_temp += custom_loss(predicted_depth, ground_truth)
-
-                        # predicted_depth = model.forward(rgb_image)
-                        # loss = custom_loss(predicted_depth, ground_truth_depth)
-                loss = loss_temp
-                scaler.scale(loss).backward()  # Scale loss
-                optimizer.zero_grad()
-                scaler.step(optimizer)
-                scaler.update()
-                torch.cuda.empty_cache() # Not entirely sure if this will help or not
+            #             # predicted_depth = model.forward(rgb_image)
+            #             # loss = custom_loss(predicted_depth, ground_truth_depth)
+            #     loss = loss_temp
+            #     scaler.scale(loss).backward()  # Scale loss
+            #     optimizer.zero_grad()
+            #     scaler.step(optimizer)
+            #     scaler.update()
+            #     torch.cuda.empty_cache() # Not entirely sure if this will help or not
 
                 epoch_loss += loss.item()
             avg_loss = epoch_loss / len(train_dataloader)
@@ -437,10 +437,14 @@ class Params:
         # self.name = "resnet_backbone" # mobilenet_backbone #resnet_backbone
         self.resume_training = True
         self.run_title = "syndrone_train_v1"
-        self.train_directory = 'c:/Users/chase/OneDrive/Documents/Grad/ML_for_Robots/final_project/dataset/images/train'
-        self.val_directory = 'c:/Users/chase/OneDrive/Documents/Grad/ML_for_Robots/final_project/dataset/images/val'
-        self.depth_train_directory = 'c:/Users/chase/OneDrive/Documents/Grad/ML_for_Robots/final_project/dataset/depth/train'
-        self.depth_val_directory = 'c:/Users/chase/OneDrive/Documents/Grad/ML_for_Robots/final_project/dataset/depth/val'
+        # self.train_directory = 'c:/Users/chase/OneDrive/Documents/Grad/ML_for_Robots/final_project/dataset/images/train'
+        # self.val_directory = 'c:/Users/chase/OneDrive/Documents/Grad/ML_for_Robots/final_project/dataset/images/val'
+        # self.depth_train_directory = 'c:/Users/chase/OneDrive/Documents/Grad/ML_for_Robots/final_project/dataset/depth/train'
+        # self.depth_val_directory = 'c:/Users/chase/OneDrive/Documents/Grad/ML_for_Robots/final_project/dataset/depth/val'
+        self.train_directory = 'dataset/images/train'
+        self.val_directory = 'dataset/images/val'
+        self.depth_train_directory = 'dataset/depth/train'
+        self.depth_val_directory = 'dataset/depth/val'
         # self.train_bool = True
 
     def get_params(self):
