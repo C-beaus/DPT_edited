@@ -428,7 +428,7 @@ def run(input_path, output_path, model_path, train_bool, model_type="dpt_hybrid"
 class Params:
     def __init__(self):
         self.num_epochs = 100
-        self.batch_size = 16
+        self.batch_size = 8
         self.lr = 0.005
         # self.momentum = 0.9
         # self.weight_decay = 0.0001 # 0.0005
