@@ -55,7 +55,7 @@ class SyndroneDatasetTrain(Dataset):
     def __getitem__(self, idx):
         # rgb_image = cv2.imread(self.train_image_paths[idx], cv2.IMREAD_UNCHANGED)[...,::-1]/255. # maybe edit if I have bounding boxes over the image?
         rgb = util.io.read_image(self.train_image_paths[idx])
-        depth = util.io.read_image(self.train_depth_paths[idx])
+        depth = 1 - util.io.read_image(self.train_depth_paths[idx]) # read and inverse depth images
 
         rgb_image = self.transform({"image": rgb})["image"]
         # depth_image = self.transform({"image" : rgb, "depth": depth})["depth"]
@@ -410,6 +410,7 @@ def run(input_path, output_path, model_path, train_bool, model_type="dpt_hybrid"
                     .cpu()
                     .numpy()
                 )
+                prediction_v2 = 1 - prediction
 
                 if model_type == "dpt_hybrid_kitti":
                     prediction *= 256
@@ -421,6 +422,7 @@ def run(input_path, output_path, model_path, train_bool, model_type="dpt_hybrid"
                 output_path, os.path.splitext(os.path.basename(img_name))[0]
             )
             util.io.write_depth(filename, prediction, bits=2, absolute_depth=args.absolute_depth)
+            util.io.write_depth(filename + 'v2', prediction_v2, bits=2, absolute_depth=args.absolute_depth)
 
         print("finished")
 
