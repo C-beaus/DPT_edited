@@ -438,7 +438,7 @@ class Params:
         # self.lr_gamma = 0.1
         # self.name = "resnet_backbone" # mobilenet_backbone #resnet_backbone
         self.resume_training = True
-        self.run_title = "syndrone_train_v2"
+        self.run_title = "syndrone_train_v3"
         # self.train_directory = 'c:/Users/chase/OneDrive/Documents/Grad/ML_for_Robots/final_project/dataset/images/train'
         # self.val_directory = 'c:/Users/chase/OneDrive/Documents/Grad/ML_for_Robots/final_project/dataset/images/val'
         # self.depth_train_directory = 'c:/Users/chase/OneDrive/Documents/Grad/ML_for_Robots/final_project/dataset/depth/train'
