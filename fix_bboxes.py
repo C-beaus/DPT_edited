@@ -19,7 +19,7 @@ class SelmaDrones(Dataset):
                  seqnlen='120',
                  scenario='ClearNoon',
                  height='20',
-                 split='train',
+                 split='test', #train
                  modality='all',
                  minlen=0):
 

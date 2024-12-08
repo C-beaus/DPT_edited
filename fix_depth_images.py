@@ -10,6 +10,7 @@ from matplotlib.patches import Rectangle
 import torch
 from torch.utils.data import Dataset
 import os
+import util.io
 
 class SelmaDrones(Dataset):
     def __init__(self,
@@ -88,11 +89,16 @@ class SelmaDrones(Dataset):
 
         rgb = cv.imread(fpath%('rgb', 'jpg'), cv.IMREAD_UNCHANGED)[...,::-1]/255.
         #rgb = (rgb - [0.485, 0.456, 0.406])/[0.229, 0.224, 0.225]
+
+        # rgb_test = util.io.read_image(fpath%('rgb', 'jpg'))
+
+        # rgb_test2 = cv.imread(fpath%('rgb', 'jpg'), cv.IMREAD_UNCHANGED)[...,::-1]
         
         sem = cv.imread(fpath%('semantic', 'png'), cv.IMREAD_UNCHANGED)
 
         depth_path = path.join("c:/Users/chase/OneDrive/Documents/Grad/ML_for_Robots/final_project/Town01_Opt_120_depth/Town01_Opt_120/ClearNoon/", "height"+fpath[-15:-13]+"m", "%s", fpath[-8:-3]+".%s")
         dth = 1000. * cv.imread(depth_path%('depth', 'png'), cv.IMREAD_UNCHANGED)/(256 * 256 - 1)
+
         
         camera = json.load(open(fpath%('camera', 'json')))
         shift = np.array([camera['x'], camera['y'], camera['z']])

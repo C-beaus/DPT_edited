@@ -22,6 +22,8 @@ from torch.utils.tensorboard import SummaryWriter
 import logging
 import sys
 
+import numpy as np
+
 #from util.misc import visualize_attention
 
 # Set up logging
@@ -55,15 +57,30 @@ class SyndroneDatasetTrain(Dataset):
     def __getitem__(self, idx):
         # rgb_image = cv2.imread(self.train_image_paths[idx], cv2.IMREAD_UNCHANGED)[...,::-1]/255. # maybe edit if I have bounding boxes over the image?
         rgb = util.io.read_image(self.train_image_paths[idx])
-        depth = 1 - util.io.read_image(self.train_depth_paths[idx]) # read and inverse depth images
+        # depth = 1 - util.io.read_image(self.train_depth_paths[idx]) # read and inverse depth images
+
+        # dth = cv2.imread(self.train_depth_paths[idx], cv2.IMREAD_UNCHANGED)/(256 * 256 - 1) # 1000. * 
+        # dth = 1 - dth
+        # dth = dth * 255
+
+        depth_image = 1000. * (1 - cv2.imread("dataset/depth/val/00000.png", cv2.IMREAD_UNCHANGED)/(256 * 256 -1))
+
+
+        # dth_img = sample["depth"].astype(np.float32)
+        # sample["depth"] = np.ascontiguousarray(depth)
+
+        # output = self.transform({"image":rgb})
+        # rgb_image = output["image"]
+        # depth_image = output["depth"]
+
 
         rgb_image = self.transform({"image": rgb})["image"]
-        # depth_image = self.transform({"image" : rgb, "depth": depth})["depth"]
-        depth_image = self.transform({"image" : depth})["image"]
+        # # depth_image = self.transform({"image" : rgb, "depth": depth})["depth"]
+        # depth_image = self.transform({"image" : depth})["image"]
 
 
-        rgb_sample = torch.from_numpy(rgb_image).to(self.device).unsqueeze(0)
-        depth_sample = torch.from_numpy(depth_image).to(self.device).unsqueeze(0)
+        rgb_sample = torch.from_numpy(rgb_image) #.to(self.device) #.unsqueeze(0)
+        depth_sample = torch.from_numpy(depth_image) #.to(self.device) #.unsqueeze(0)
 
         # depth_image = cv2.imread(self.train_depth_paths[idx]) # Is this correct?
 
@@ -104,6 +121,11 @@ def custom_loss(predicted_depth, ground_truth_depth):
     mask = (ground_truth_depth > 0).float()
     return torch.mean(torch.abs(predicted_depth - ground_truth_depth) * mask)
 
+def depth_loss(predicted, target):
+    mask = target > 0
+    diff = predicted[mask] - target[mask]
+    return torch.sqrt((diff ** 2).mean())
+
 
 def run(input_path, output_path, model_path, train_bool, model_type="dpt_hybrid", optimize=True):
     """Run MonoDepthNN to compute depth maps.
@@ -117,6 +139,7 @@ def run(input_path, output_path, model_path, train_bool, model_type="dpt_hybrid"
 
     # select device
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    # device = torch.device("cpu")
     print("device: %s" % device)
 
     # load network
@@ -195,6 +218,36 @@ def run(input_path, output_path, model_path, train_bool, model_type="dpt_hybrid"
                 PrepareForNet(),
             ]
         )
+    
+    # transform_depth = Compose(
+    #         [
+    #             Resize(
+    #                 net_w,
+    #                 net_h,
+    #                 resize_target=None,
+    #                 keep_aspect_ratio=True,
+    #                 ensure_multiple_of=32,
+    #                 resize_method="minimal",
+    #                 image_interpolation_method=cv2.INTER_CUBIC,
+    #             ),
+    #             normalization,
+    #         ]
+    #     )
+    
+    # transform_depth_2 = Compose(
+    #         [
+    #             Resize(
+    #                 net_w,
+    #                 net_h,
+    #                 resize_target=None,
+    #                 keep_aspect_ratio=True,
+    #                 ensure_multiple_of=32,
+    #                 resize_method="minimal",
+    #                 image_interpolation_method=cv2.INTER_CUBIC,
+    #             ),
+    #             normalization,
+    #         ]
+    #     )
 
     if train_bool:
         model.to(device)
@@ -279,18 +332,33 @@ def run(input_path, output_path, model_path, train_bool, model_type="dpt_hybrid"
                 ground_truth_depth = batch["depth"].to(device)
                 
                 # loss_temp = []
-                loss_temp = 0
-                for rgb, ground_truth in zip(rgb_image, ground_truth_depth):
+                # loss_temp = 0
+                # for rgb, ground_truth in zip(rgb_image, ground_truth_depth):
 
-                    # predicted_depth = model.forward(rgb_image)
-                    # loss = (custom_loss(predicted_depth, ground_truth_depth))
-                    predicted_depth = model.forward(rgb)
+                #     # predicted_depth = model.forward(rgb_image)
+                #     # loss = (custom_loss(predicted_depth, ground_truth_depth))
+                #     predicted_depth = model.forward(rgb)
 
-                    # loss_temp.append(custom_loss(predicted_depth, ground_truth))
-                    loss_temp += custom_loss(predicted_depth, ground_truth)
+                #     # loss_temp.append(custom_loss(predicted_depth, ground_truth))
+                #     # loss_temp += custom_loss(predicted_depth, ground_truth)
+                #     loss_temp += depth_loss(predicted_depth, ground_truth )
+                predicted_depth = model.forward(rgb_image)
+
+                predicted_depth = (
+                    torch.nn.functional.interpolate(
+                        predicted_depth.unsqueeze(1),
+                        size=img.shape[:2],
+                        mode="bicubic",
+                        align_corners=False,
+                    )
+                    .squeeze()
+                )
+
+                loss = depth_loss(predicted_depth, ground_truth_depth)
 
                 # loss = sum(loss_temp)
-                loss = loss_temp
+
+                # loss = loss_temp
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
@@ -356,6 +424,9 @@ def run(input_path, output_path, model_path, train_bool, model_type="dpt_hybrid"
         logger.info("Training completed, params saved, and model saved to 'fasterrcnn_model_" + model_params.run_title + ".pt'.")
 
     else:
+        device = torch.device("cpu")
+        print(f"new device is: {device}")
+
         print("Evaluating, No Training")
         model.eval()
 
@@ -382,6 +453,33 @@ def run(input_path, output_path, model_path, train_bool, model_type="dpt_hybrid"
 
             img = util.io.read_image(img_name)
 
+            # depth_img = 1 - util.io.read_image("dataset/depth/val/00000.png")
+            # depth_img2 = cv2.imread("dataset/depth/val/00000.png")
+            # depth_img3 = cv2.imread("dataset/depth/val/00000.png", cv2.IMREAD_UNCHANGED)
+            # # depth_img4 = cv2.imread("Town01_Opt_120_depth/Town01_Opt_120/ClearNoon/height20m/depth/00000.png")
+            # # depth_img5 = cv2.imread("Town01_Opt_120_depth/Town01_Opt_120/ClearNoon/height20m/depth/00000.png", cv2.IMREAD_UNCHANGED)
+            # print(f"Data Type: {depth_img3.dtype}, Shape: {depth_img3.shape}")
+
+            # depth_img_test = cv2.imread("dataset/depth/val/00000.png", cv2.IMREAD_UNCHANGED)/(256 * 256 - 1)
+            # depth_img_test_1 = cv2.merge([depth_img_test, depth_img_test, depth_img_test])
+            # depth_img_test_2 = (depth_img_test_1 - [0.485, 0.456, 0.406])/[0.229, 0.224, 0.225]
+            # depth_img_test_3 = depth_img_test_2
+            # depth_img_test_3[depth_img_test_3 < 1000.] -= int(20)
+            # depth_in_meters = 1000. * (1 - cv2.imread("dataset/depth/val/00000.png", cv2.IMREAD_UNCHANGED)/(256 * 256 -1))
+            # # depth_load = np.load('dataset/depth/val/00000.png')
+
+            # from PIL import Image
+            # # Load the image
+            # depth_image = Image.open("dataset/depth/val/00000.png")
+
+            # # Check mode and size
+            # print(f"Mode: {depth_image.mode}, Size: {depth_image.size}")
+
+            # # Convert to array to inspect pixel values
+            # pixel_array = np.array(depth_image)
+            # print(f"Pixel Value Range: {pixel_array.min()} - {pixel_array.max()}")
+
+
             if args.kitti_crop is True:
                 height, width, _ = img.shape
                 top = height - 352
@@ -389,16 +487,48 @@ def run(input_path, output_path, model_path, train_bool, model_type="dpt_hybrid"
                 img = img[top : top + 352, left : left + 1216, :]
 
             img_input = transform({"image": img})["image"]
+            # output = transform({"image": img, "depth": depth_in_meters})
+            # # img_input = output["image"]
+            # depth_output = output["depth"]
+            # # depth_test_output = transform({"image": depth_in_meters})
 
             # compute
             with torch.no_grad():
                 sample = torch.from_numpy(img_input).to(device).unsqueeze(0)
+
+                # depth_in_meters_test = torch.from_numpy(depth_in_meters).to(device)
+                # depth_in_meters_stacked = torch.stack((depth_in_meters_test, depth_in_meters_test), dim=0)
 
                 if optimize == True and device == torch.device("cuda"):
                     sample = sample.to(memory_format=torch.channels_last)
                     sample = sample.half()
 
                 prediction = model.forward(sample)
+                prediction_init = np.array(prediction)
+                print(f"Pixel Value Range: {prediction_init.min()} - {prediction_init.max()}")
+
+                # prediction_test = (
+                #     torch.nn.functional.interpolate(
+                #         prediction.unsqueeze(1),
+                #         size=img.shape[:2],
+                #         mode="bicubic",
+                #         align_corners=False,
+                #     )
+                #     .squeeze()
+                # )
+
+                # prediction_test_2 = torch.cat((prediction, prediction), dim = 0)
+
+                # prediction_test_3 = (
+                #     torch.nn.functional.interpolate(
+                #         prediction_test_2.unsqueeze(1),
+                #         size=img.shape[:2],
+                #         mode="bicubic",
+                #         align_corners=False,
+                #     )
+                #     .squeeze()
+                # )
+
                 prediction = (
                     torch.nn.functional.interpolate(
                         prediction.unsqueeze(1),
@@ -410,7 +540,15 @@ def run(input_path, output_path, model_path, train_bool, model_type="dpt_hybrid"
                     .cpu()
                     .numpy()
                 )
+
+
+                prediction_after = np.array(prediction)
+                print(f"Pixel Value Range: {prediction_after.min()} - {prediction_after.max()}")
+
                 prediction_v2 = 1 - prediction
+
+                prediction_v3 = (1 - prediction) * 1000.0
+                prediction_v4 = (1 - prediction) * 256
 
                 if model_type == "dpt_hybrid_kitti":
                     prediction *= 256
@@ -423,22 +561,25 @@ def run(input_path, output_path, model_path, train_bool, model_type="dpt_hybrid"
             )
             util.io.write_depth(filename, prediction, bits=2, absolute_depth=args.absolute_depth)
             util.io.write_depth(filename + 'v2', prediction_v2, bits=2, absolute_depth=args.absolute_depth)
+            util.io.write_depth(filename + 'v3', prediction_v3, bits=2, absolute_depth=args.absolute_depth)
+            util.io.write_depth(filename + 'v4', prediction_v4, bits=2, absolute_depth=args.absolute_depth)
+
 
         print("finished")
 
 
 class Params:
     def __init__(self):
-        self.num_epochs = 100
+        self.num_epochs = 200
         self.batch_size = 4
-        self.lr = 0.005
+        self.lr = 1e-4
         # self.momentum = 0.9
         # self.weight_decay = 0.0001 # 0.0005
         # self.lr_step_size = 18 #3
         # self.lr_gamma = 0.1
         # self.name = "resnet_backbone" # mobilenet_backbone #resnet_backbone
         self.resume_training = True
-        self.run_title = "syndrone_train_v3"
+        self.run_title = "monodepth_on_syndrone_v1"
         # self.train_directory = 'c:/Users/chase/OneDrive/Documents/Grad/ML_for_Robots/final_project/dataset/images/train'
         # self.val_directory = 'c:/Users/chase/OneDrive/Documents/Grad/ML_for_Robots/final_project/dataset/images/val'
         # self.depth_train_directory = 'c:/Users/chase/OneDrive/Documents/Grad/ML_for_Robots/final_project/dataset/depth/train'
@@ -529,6 +670,10 @@ if __name__ == "__main__":
 
     if args.model_weights is None:
         args.model_weights = default_models[args.model_type]
+
+    
+    # args.train_bool = False
+    # args.model_weights = "models/syndrone_train_v3/trained_model.pt"
 
     # set torch options
     torch.backends.cudnn.enabled = True

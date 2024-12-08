@@ -180,7 +180,7 @@ class Resize(object):
 
             if "depth" in sample:
                 sample["depth"] = cv2.resize(
-                    sample["depth"], (width, height), interpolation=cv2.INTER_NEAREST
+                    sample["depth"], (width, height), interpolation=self.__image_interpolation_method # cv2.INTER_NEAREST
                 )
 
             sample["mask"] = cv2.resize(
