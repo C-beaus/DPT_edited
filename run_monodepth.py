@@ -347,7 +347,8 @@ def run(input_path, output_path, model_path, train_bool, model_type="dpt_hybrid"
                 predicted_depth = (
                     torch.nn.functional.interpolate(
                         predicted_depth.unsqueeze(1),
-                        size=img.shape[:2],
+                        size=np.array(ground_truth_depth.cpu()).shape[1:],
+                        #size=img.shape[:2],
                         mode="bicubic",
                         align_corners=False,
                     )
@@ -465,7 +466,7 @@ def run(input_path, output_path, model_path, train_bool, model_type="dpt_hybrid"
             # depth_img_test_2 = (depth_img_test_1 - [0.485, 0.456, 0.406])/[0.229, 0.224, 0.225]
             # depth_img_test_3 = depth_img_test_2
             # depth_img_test_3[depth_img_test_3 < 1000.] -= int(20)
-            # depth_in_meters = 1000. * (1 - cv2.imread("dataset/depth/val/00000.png", cv2.IMREAD_UNCHANGED)/(256 * 256 -1))
+            depth_in_meters = 1000. * (1 - cv2.imread("dataset/depth/val/00000.png", cv2.IMREAD_UNCHANGED)/(256 * 256 -1))
             # # depth_load = np.load('dataset/depth/val/00000.png')
 
             # from PIL import Image
@@ -496,8 +497,8 @@ def run(input_path, output_path, model_path, train_bool, model_type="dpt_hybrid"
             with torch.no_grad():
                 sample = torch.from_numpy(img_input).to(device).unsqueeze(0)
 
-                # depth_in_meters_test = torch.from_numpy(depth_in_meters).to(device)
-                # depth_in_meters_stacked = torch.stack((depth_in_meters_test, depth_in_meters_test), dim=0)
+                depth_in_meters_test = torch.from_numpy(depth_in_meters).to(device)
+                depth_in_meters_stacked = torch.stack((depth_in_meters_test, depth_in_meters_test), dim=0)
 
                 if optimize == True and device == torch.device("cuda"):
                     sample = sample.to(memory_format=torch.channels_last)
