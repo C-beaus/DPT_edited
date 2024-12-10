@@ -481,9 +481,20 @@ def run(input_path, output_path, model_path, train_bool, model_type="dpt_hybrid"
             # depth_img_test_2 = (depth_img_test_1 - [0.485, 0.456, 0.406])/[0.229, 0.224, 0.225]
             # depth_img_test_3 = depth_img_test_2
             # depth_img_test_3[depth_img_test_3 < 1000.] -= int(20)
-            depth_in_meters = 1000. * (1 - cv2.imread("dataset/depth/val/00000.png", cv2.IMREAD_UNCHANGED)/(256 * 256 -1))
-            depth_in_meters_other = (1 - cv2.imread("dataset/depth/val/00000.png", cv2.IMREAD_UNCHANGED)/(256 * 256 -1))
-            depth_load = util.io.read_pfm('DPT/output_monodepth/00000.pfm')
+
+            # depth_in_meters = 1000. * (1 - cv2.imread(f"dataset/depth/val/00000.png", cv2.IMREAD_UNCHANGED)/(256 * 256 -1))
+            # depth_in_meters_other = (1 - cv2.imread(f"dataset/depth/val/00000.png", cv2.IMREAD_UNCHANGED)/(256 * 256 -1))
+            # depth_in_meters = 1000. * (1 - cv2.imread(f"dataset/depth/val/{img_name[-9:-4]}.png", cv2.IMREAD_UNCHANGED)/(256 * 256 -1))
+            try:
+                depth_in_meters = 1000. * (1 - cv2.imread(f"dataset/depth/val/{img_name[-9:-4]}.png", cv2.IMREAD_UNCHANGED)/(256 * 256 -1))
+                depth_in_meters_other = (1 - cv2.imread(f"dataset/depth/val/{img_name[-9:-4]}.png", cv2.IMREAD_UNCHANGED)/(256 * 256 -1))
+            except:
+                depth_in_meters = 1000. * (1 - cv2.imread(f"dataset/depth/train/{img_name[-9:-4]}.png", cv2.IMREAD_UNCHANGED)/(256 * 256 -1))
+                depth_in_meters_other = (1 - cv2.imread(f"dataset/depth/train/{img_name[-9:-4]}.png", cv2.IMREAD_UNCHANGED)/(256 * 256 -1))
+
+
+
+            # depth_load = util.io.read_pfm('DPT/output_monodepth/00000.pfm')
 
             # from PIL import Image
             # # Load the image
@@ -588,9 +599,10 @@ def run(input_path, output_path, model_path, train_bool, model_type="dpt_hybrid"
                 output_path, os.path.splitext(os.path.basename(img_name))[0]
             )
             util.io.write_depth(filename, prediction, bits=2, absolute_depth=args.absolute_depth)
-            util.io.write_depth(filename + 'v2', prediction_v2, bits=2, absolute_depth=args.absolute_depth)
-            util.io.write_depth(filename + 'v3', prediction_v3, bits=2, absolute_depth=args.absolute_depth)
-            util.io.write_depth(filename + 'v4', prediction_v4, bits=2, absolute_depth=args.absolute_depth)
+            util.io.write_depth(filename + "ground_truth", depth_in_meters, absolute_depth=args.absolute_depth)
+            # util.io.write_depth(filename + 'v2', prediction_v2, bits=2, absolute_depth=args.absolute_depth)
+            # util.io.write_depth(filename + 'v3', prediction_v3, bits=2, absolute_depth=args.absolute_depth)
+            # util.io.write_depth(filename + 'v4', prediction_v4, bits=2, absolute_depth=args.absolute_depth)
 
 
         print("finished")
@@ -600,14 +612,14 @@ class Params:
     def __init__(self):
         self.num_epochs = 100
         self.batch_size = 4
-        self.lr = 1e-4
+        self.lr = 5e-3
         # self.momentum = 0.9
         # self.weight_decay = 0.0001 # 0.0005
         # self.lr_step_size = 18 #3
         # self.lr_gamma = 0.1
         # self.name = "resnet_backbone" # mobilenet_backbone #resnet_backbone
         self.resume_training = True
-        self.run_title = "monodepth_on_syndrone_v2"
+        self.run_title = "monodepth_on_syndrone_v3"
         # self.train_directory = 'c:/Users/chase/OneDrive/Documents/Grad/ML_for_Robots/final_project/dataset/images/train'
         # self.val_directory = 'c:/Users/chase/OneDrive/Documents/Grad/ML_for_Robots/final_project/dataset/images/val'
         # self.depth_train_directory = 'c:/Users/chase/OneDrive/Documents/Grad/ML_for_Robots/final_project/dataset/depth/train'
@@ -705,7 +717,8 @@ if __name__ == "__main__":
 
     
     # args.train_bool = False
-    # args.model_weights = "models/monodepth_on_syndrone_v1/trained_model.pt"
+    # # args.model_weights = "models/monodepth_on_syndrone_v1/trained_model.pt"
+    # args.model_weights = "models/monodepth_on_syndrone_v2/trained_model.pt"
 
     # set torch options
     torch.backends.cudnn.enabled = True
