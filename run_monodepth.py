@@ -716,8 +716,8 @@ if __name__ == "__main__":
         args.model_weights = default_models[args.model_type]
 
     
-    args.train_bool = False
-    args.model_weights = "models/monodepth_on_syndrone_v3/trained_model.pt"
+    # args.train_bool = False
+    # args.model_weights = "models/monodepth_on_syndrone_v3/trained_model.pt"
     # args.model_weights = "models/monodepth_on_syndrone_v2/trained_model.pt"
 
     # set torch options
