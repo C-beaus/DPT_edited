@@ -64,7 +64,7 @@ class SyndroneDatasetTrain(Dataset):
         # dth = dth * 255
 
         # depth_image = 1000. * (1 - cv2.imread("dataset/depth/val/00000.png", cv2.IMREAD_UNCHANGED)/(256 * 256 -1))
-        depth_image = (1 - cv2.imread("dataset/depth/val/00000.png", cv2.IMREAD_UNCHANGED)/(256 * 256 -1))
+        depth_image = (1 - cv2.imread(self.train_depth_paths[idx], cv2.IMREAD_UNCHANGED)/(256 * 256 -1))
 
 
 
@@ -91,33 +91,33 @@ class SyndroneDatasetTrain(Dataset):
         #     depth_image = self.transform(depth_image)
         return {"rgb": rgb_sample, "depth": depth_sample}
     
-class SyndroneDatasetVal(Dataset):
-    def __init__(self, val_image_paths, val_depth_paths, transform, device):
-        self.val_image_paths = val_image_paths
-        self.val_depth_paths = val_depth_paths
-        self.transform = transform
-        self.device = device
-    def __len__(self):
-        return len(self.val_image_paths)
-    def __getitem__(self, idx):
-        # rgb_image = cv2.imread(self.val_image_paths[idx], cv2.IMREAD_UNCHANGED)[...,::-1]/255. # maybe edit if I have bounding boxes over the image?
-        # depth_image = cv2.imread(self.val_depth_paths[idx]) # Is this correct?
+# class SyndroneDatasetVal(Dataset):
+#     def __init__(self, val_image_paths, val_depth_paths, transform, device):
+#         self.val_image_paths = val_image_paths
+#         self.val_depth_paths = val_depth_paths
+#         self.transform = transform
+#         self.device = device
+#     def __len__(self):
+#         return len(self.val_image_paths)
+#     def __getitem__(self, idx):
+#         # rgb_image = cv2.imread(self.val_image_paths[idx], cv2.IMREAD_UNCHANGED)[...,::-1]/255. # maybe edit if I have bounding boxes over the image?
+#         # depth_image = cv2.imread(self.val_depth_paths[idx]) # Is this correct?
 
-        # if self.transform:
-        #     rgb_image = self.transform(rgb_image)
-        #     depth_image = self.transform(depth_image)
+#         # if self.transform:
+#         #     rgb_image = self.transform(rgb_image)
+#         #     depth_image = self.transform(depth_image)
 
-        rgb = util.io.read_image(self.val_image_paths[idx])
-        depth = util.io.read_image(self.val_depth_paths[idx])
+#         rgb = util.io.read_image(self.val_image_paths[idx])
+#         depth = util.io.read_image(self.val_depth_paths[idx])
 
-        rgb_image = self.transform({"image": rgb})["image"]
-        # depth_image = self.transform({"depth": depth})["depth"]
-        depth_image = self.transform({"image" : depth})["image"]
+#         rgb_image = self.transform({"image": rgb})["image"]
+#         # depth_image = self.transform({"depth": depth})["depth"]
+#         depth_image = self.transform({"image" : depth})["image"]
 
 
-        rgb_sample = torch.from_numpy(rgb_image).to(self.device).unsqueeze(0)
-        depth_sample = torch.from_numpy(depth_image).to(self.device).unsqueeze(0)
-        return {"rgb": rgb_sample, "depth": depth_sample}
+#         rgb_sample = torch.from_numpy(rgb_image).to(self.device).unsqueeze(0)
+#         depth_sample = torch.from_numpy(depth_image).to(self.device).unsqueeze(0)
+#         return {"rgb": rgb_sample, "depth": depth_sample}
     
 def custom_loss(predicted_depth, ground_truth_depth):
     mask = (ground_truth_depth > 0).float()
@@ -301,9 +301,9 @@ def run(input_path, output_path, model_path, train_bool, model_type="dpt_hybrid"
                 
 
         train_dataset = SyndroneDatasetTrain(train_image_paths, depth_train_paths, transform, device)
-        val_dataset = SyndroneDatasetVal(val_image_paths, depth_val_paths, transform, device)
+        # val_dataset = SyndroneDatasetVal(val_image_paths, depth_val_paths, transform, device)
         train_dataloader = DataLoader(train_dataset, batch_size=model_params.batch_size, shuffle=True)
-        val_dataloader = DataLoader(val_dataset, batch_size=len(val_dataset), shuffle=True) # val considers entire val dataset
+        # val_dataloader = DataLoader(val_dataset, batch_size=len(val_dataset), shuffle=True) # val considers entire val dataset
 
         # Construct an optimizer
         params = [p for p in model.parameters() if p.requires_grad]
@@ -611,15 +611,15 @@ def run(input_path, output_path, model_path, train_bool, model_type="dpt_hybrid"
 class Params:
     def __init__(self):
         self.num_epochs = 100
-        self.batch_size = 4
-        self.lr = 5e-3
+        self.batch_size = 4 #16
+        self.lr = 5e-3 #1e-4
         # self.momentum = 0.9
         # self.weight_decay = 0.0001 # 0.0005
         # self.lr_step_size = 18 #3
         # self.lr_gamma = 0.1
         # self.name = "resnet_backbone" # mobilenet_backbone #resnet_backbone
         self.resume_training = True
-        self.run_title = "monodepth_on_syndrone_v3"
+        self.run_title = "monodepth_on_syndrone_v4"
         # self.train_directory = 'c:/Users/chase/OneDrive/Documents/Grad/ML_for_Robots/final_project/dataset/images/train'
         # self.val_directory = 'c:/Users/chase/OneDrive/Documents/Grad/ML_for_Robots/final_project/dataset/images/val'
         # self.depth_train_directory = 'c:/Users/chase/OneDrive/Documents/Grad/ML_for_Robots/final_project/dataset/depth/train'
@@ -716,8 +716,8 @@ if __name__ == "__main__":
         args.model_weights = default_models[args.model_type]
 
     
-    # args.train_bool = False
-    # # args.model_weights = "models/monodepth_on_syndrone_v1/trained_model.pt"
+    args.train_bool = False
+    args.model_weights = "models/monodepth_on_syndrone_v3/trained_model.pt"
     # args.model_weights = "models/monodepth_on_syndrone_v2/trained_model.pt"
 
     # set torch options
